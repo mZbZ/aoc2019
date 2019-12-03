@@ -1,0 +1,23 @@
+[package]
+name = "aoc2019"
+version = "0.1.0"
+authors = ["mZbZ <lucas.mario@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+elapsed ="*"
+
+[[bin]]
+name = "day1"
+path = "day1/src/main.rs"
+
+[[bin]]
+name = "day2"
+path = "day2/src/main.rs"
+
+
+[[bin]]
+name = "day3"
+path = "day3/src/main.rs"
