@@ -2,6 +2,7 @@ extern crate elapsed;
 use elapsed::measure_time;
 
 fn main() {
+    println!("AOC 2019 Day3");
     let input = include_str!("../input");
 
     let _test_strings = [
@@ -15,37 +16,36 @@ fn main() {
         _test_strings.iter().zip(_test_results.iter())
     {
         assert_eq!(
-            part1(parse_input(test_string)),
+            part_both(parse_input(test_string)),
             (*test_result1, *test_result2)
         );
     }
-    let (elapsed, output) = measure_time(|| part1(parse_input(input)));
-
-    println!("Part2 game [{:?}] Elapsed = {}", output, elapsed);
+    let (parse_time, p_input) = measure_time(|| parse_input(input));
+    let (solve_time, output) = measure_time(|| part_both(p_input));
+    println!("Parse time = {}", parse_time);
+    println!("Both parts {:?}: Solve time = {}", output, solve_time);
 }
 
-fn part1(input: Vec<Vec<(isize, isize)>>) -> (isize, usize) {
-    let mut part1_min = isize::max_value();
-    let mut part2_min = usize::max_value();
-    for n in 0..input[0].len() {
-        for m in 0..input[1].len() {
-            if input[0][n] == input[1][m] {
-                let manhat = calc_manhat(input[0][n]);
-                if part1_min > manhat {
-                    part1_min = manhat;
+fn part_both(mut input: Vec<Vec<(isize, isize)>>) -> (isize, usize) {
+    // let mut part1_min = ;
+    input.pop().unwrap().into_iter().enumerate().fold(
+        (isize::max_value(), usize::max_value()),
+        |(mut p1_min, mut p2_min), (n, ref x)| {
+            input[0].iter().enumerate().for_each(|(m, ref y)| {
+                if x == *y {
+                    let manhat = x.0.abs() + x.1.abs();
+                    if p1_min > manhat {
+                        p1_min = manhat;
+                    }
+                    let time = n + m + 2;
+                    if p2_min > time {
+                        p2_min = time;
+                    }
                 }
-                let time = n + m + 2;
-                if part2_min > time {
-                    part2_min = time;
-                }
-            }
-        }
-    }
-    (part1_min, part2_min)
-}
-
-fn calc_manhat(coord: (isize, isize)) -> isize {
-    coord.0.abs() + coord.1.abs()
+            });
+            (p1_min, p2_min)
+        },
+    )
 }
 
 fn parse_input(input: &str) -> Vec<Vec<(isize, isize)>> {
@@ -60,11 +60,13 @@ fn parse_input(input: &str) -> Vec<Vec<(isize, isize)>> {
             };
             let count = y[1..].parse::<usize>().unwrap();
             for _ in 0..count {
+                let new_dir;
                 if let Some(last) = p.last() {
-                    p.push((last.0 + dir.0, last.1 + dir.1));
+                    new_dir = (last.0 + dir.0, last.1 + dir.1);
                 } else {
-                    p.push(dir);
+                    new_dir = dir;
                 };
+                p.push(new_dir);
             }
             p
         }));
