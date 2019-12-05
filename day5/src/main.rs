@@ -32,13 +32,11 @@ fn main() {
          999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99",
     );
     assert_eq!(part_both(_t_str6.clone(), 8), 1000);
-    assert_eq!(part_both(_t_str6.clone(), 7), 999);
+    assert_eq!(part_both(_t_str6.clone(), 1), 999);
     assert_eq!(part_both(_t_str6, 9), 1001);
 
     println!("Part1: {:?}", part_both(input.clone(), 1));
     println!("Part2: {:?}", part_both(input, 5));
-
-    // println!("Part2: {:?}", part_both(input, 1));
 }
 
 fn parse_day5(input: &str) -> Vec<isize> {
@@ -75,15 +73,14 @@ fn part_both(mut prog: Vec<isize>, input: isize) -> isize {
                 _ => panic!("Should never happen"),
             };
 
-            // dbg!(op, idx, f_idx, prog[f_idx], s_idx, prog[s_idx], t_idx, progt_idx);
+            let t_idx = *prog.get(idx + 3).unwrap_or(&0isize) as usize;
+
             match op {
                 1 => {
-                    let t_idx = prog[idx + 3] as usize;
                     prog[t_idx] = prog[f_idx] + prog[s_idx];
                     idx += 4;
                 }
                 2 => {
-                    let t_idx = prog[idx + 3] as usize;
                     prog[t_idx] = prog[f_idx] * prog[s_idx];
                     idx += 4;
                 }
@@ -112,7 +109,6 @@ fn part_both(mut prog: Vec<isize>, input: isize) -> isize {
                     }
                 }
                 7 => {
-                    let t_idx = prog[idx + 3] as usize;
                     if prog[f_idx] < prog[s_idx] {
                         prog[t_idx] = 1;
                     } else {
@@ -121,7 +117,6 @@ fn part_both(mut prog: Vec<isize>, input: isize) -> isize {
                     idx += 4;
                 }
                 8 => {
-                    let t_idx = prog[idx + 3] as usize;
                     if prog[f_idx] == prog[s_idx] {
                         prog[t_idx] = 1;
                     } else {
@@ -133,18 +128,5 @@ fn part_both(mut prog: Vec<isize>, input: isize) -> isize {
             }
         }
     }
-    // println!("day 1 {:?}", prog[0]);
     output
 }
-
-// fn part2(input: Vec<usize>, find: usize) -> usize {
-//     loop {
-//         for x in 0..=99 {
-//             for y in 0..=99 {
-//                 if part1(input.clone(), x, y) == find {
-//                     return (100 * x) + y;
-//                 }
-//             }
-//         }
-//     }
-// }
