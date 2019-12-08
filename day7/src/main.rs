@@ -3,12 +3,6 @@ fn main() {
 
     let input = parse(include_str!("../input"));
 
-    // let mut input_d2 = include_str!("../../day2/input")
-    //     .split(',')
-    //     .map(|x| x.parse::<isize>().unwrap())
-    //     .collect::<Vec<isize>>();
-    // input_d2[1] = 53;
-    // input_d2[2] = 79;
     let _t_str0 = parse("3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0");
     assert_eq!(part1(_t_str0), 43210);
     let _t_str1 = parse("3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0");
@@ -17,7 +11,19 @@ fn main() {
     assert_eq!(part1(_t_str2), 65210);
 
     println!("Part1: {:?}", part1(input.clone()));
-    // println!("Part2: {:?}", part_both(input, 5));
+    let _t_str3 = parse(
+        "3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5",
+    );
+    println!("Test 1 part two");
+    assert_eq!(part2(_t_str3), 139_629_729);
+    let _t_str4 = parse(
+        "3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10",
+    );
+    println!("Test 2 part two");
+
+    assert_eq!(part2(_t_str4), 18216);
+
+    println!("Part2: {:?}", part2(input.clone()));
 }
 
 fn parse(input: &str) -> Vec<isize> {
@@ -54,13 +60,15 @@ fn part1(prog: Vec<isize>) -> isize {
                             && c != e
                             && d != e
                         {
-                            let amp1 = intcode(prog.clone(), vec![0, a]);
-                            let amp2 = intcode(prog.clone(), vec![amp1, b]);
-                            let amp3 = intcode(prog.clone(), vec![amp2, c]);
-                            let amp4 = intcode(prog.clone(), vec![amp3, d]);
-                            let amp5 = intcode(prog.clone(), vec![amp4, e]);
-                            if amp5 > max_thrust {
-                                max_thrust = amp5
+                            let amp1 = intcode(&mut prog.clone(), &mut vec![0, a], &mut 0).1;
+                            let amp2 = intcode(&mut prog.clone(), &mut vec![amp1, b], &mut 0).1;
+                            let amp3 = intcode(&mut prog.clone(), &mut vec![amp2, c], &mut 0).1;
+                            let amp4 = intcode(&mut prog.clone(), &mut vec![amp3, d], &mut 0).1;
+                            let amp5 = intcode(&mut prog.clone(), &mut vec![amp4, e], &mut 0).1;
+                            let thrust = amp5;
+
+                            if thrust > max_thrust {
+                                max_thrust = thrust
                             }
                         }
                     }
@@ -72,8 +80,8 @@ fn part1(prog: Vec<isize>) -> isize {
 }
 
 enum Output {
-    Halt(isize),
-    Continue(isize),
+    Halt,
+    Continue,
 }
 
 fn part2(prog: Vec<isize>) -> isize {
@@ -95,17 +103,64 @@ fn part2(prog: Vec<isize>) -> isize {
                             && c != e
                             && d != e
                         {
-                            let mut stop;
-                            let (mut stop, amp1) = match intcode(prog.clone(), vec![0, a]) {
-                                Output::Continue(val) => (false, val),
-                                Output::Halt(val) => (true, val),
-                            };
-                            let amp2 = intcode(prog.clone(), vec![amp1, b]);
-                            let amp3 = intcode(prog.clone(), vec![amp2, c]);
-                            let amp4 = intcode(prog.clone(), vec![amp3, d]);
-                            let amp5 = intcode(prog.clone(), vec![amp4, e]);
-                            if amp5 > max_thrust {
-                                max_thrust = amp5
+                            let (mut amp1, mut amp2, mut amp3, mut amp4, mut amp5) =
+                                (vec![a], vec![b], vec![c], vec![d], vec![0, e]);
+                            let (
+                                mut amp1_idx,
+                                mut amp2_idx,
+                                mut amp3_idx,
+                                mut amp4_idx,
+                                mut amp5_idx,
+                            ) = (0, 0, 0, 0, 0);
+
+                            let (
+                                mut amp1_prog,
+                                mut amp2_prog,
+                                mut amp3_prog,
+                                mut amp4_prog,
+                                mut amp5_prog,
+                            ) = (
+                                prog.clone(),
+                                prog.clone(),
+                                prog.clone(),
+                                prog.clone(),
+                                prog.clone(),
+                            );
+                            loop {
+                                match intcode(&mut amp1_prog, &mut amp5, &mut amp1_idx) {
+                                    (Output::Continue, val) => amp1.insert(0, val),
+                                    (Output::Halt, _) => {
+                                        break;
+                                    }
+                                };
+                                match intcode(&mut amp2_prog, &mut amp1, &mut amp2_idx) {
+                                    (Output::Continue, val) => amp2.insert(0, val),
+                                    (Output::Halt, _) => {
+                                        break;
+                                    }
+                                };
+                                match intcode(&mut amp3_prog, &mut amp2, &mut amp3_idx) {
+                                    (Output::Continue, val) => amp3.insert(0, val),
+                                    (Output::Halt, _) => {
+                                        break;
+                                    }
+                                };
+                                match intcode(&mut amp4_prog, &mut amp3, &mut amp4_idx) {
+                                    (Output::Continue, val) => amp4.insert(0, val),
+                                    (Output::Halt, _) => {
+                                        break;
+                                    }
+                                };
+                                match intcode(&mut amp5_prog, &mut amp4, &mut amp5_idx) {
+                                    (Output::Continue, val) => amp5.insert(0, val),
+                                    (Output::Halt, _) => {
+                                        break;
+                                    }
+                                };
+                            }
+                            let thrust = amp5.pop().unwrap();
+                            if thrust > max_thrust {
+                                max_thrust = thrust
                             }
                         }
                     }
@@ -116,58 +171,56 @@ fn part2(prog: Vec<isize>) -> isize {
     max_thrust
 }
 
-fn intcode(mut prog: Vec<isize>, mut input: Vec<isize>) -> Output {
-    let mut output = 0;
-    let mut idx = 0;
-    while idx < prog.len() {
-        if prog[idx] % 100 == 99 {
-            return Output::Halt(output);
+fn intcode(prog: &mut Vec<isize>, input: &mut Vec<isize>, idx: &mut usize) -> (Output, isize) {
+    let output = 0;
+    while *idx < prog.len() {
+        if prog[*idx] % 100 == 99 {
+            return (Output::Halt, output);
         } else {
-            let (op, f_mode, s_mode) = parse_instruction(prog[idx]);
+            let (op, f_mode, s_mode) = parse_instruction(prog[*idx]);
             let f_idx = match f_mode {
-                0 => prog[idx + 1] as usize,
-                1 => idx + 1,
+                0 => prog[*idx + 1] as usize,
+                1 => *idx + 1,
                 _ => panic!("Should never happen"),
             };
             let s_idx = match s_mode {
-                0 => prog[idx + 2] as usize,
-                1 => idx + 2,
+                0 => prog[*idx + 2] as usize,
+                1 => *idx + 2,
                 _ => panic!("Should never happen"),
             };
 
-            let t_idx = *prog.get(idx + 3).unwrap_or(&0isize) as usize;
-
+            let t_idx = *prog.get(*idx + 3).unwrap_or(&0isize) as usize;
+            // println!("Prog {:?}", prog);
+            // println!("Index {}", idx);
             match op {
                 1 => {
                     prog[t_idx] = prog[f_idx] + prog[s_idx];
-                    idx += 4;
+                    *idx += 4;
                 }
                 2 => {
                     prog[t_idx] = prog[f_idx] * prog[s_idx];
-                    idx += 4;
+                    *idx += 4;
                 }
                 3 => {
                     prog[f_idx] = input.pop().expect("Not enough input for program!");
-                    idx += 2
+                    *idx += 2
                 }
                 4 => {
-                    assert_eq!(output, 0);
-                    output = prog[f_idx];
-
-                    idx += 2
+                    *idx += 2;
+                    return (Output::Continue, prog[f_idx]);
                 }
                 5 => {
                     if prog[f_idx] != 0 {
-                        idx = prog[s_idx] as usize;
+                        *idx = prog[s_idx] as usize;
                     } else {
-                        idx += 3;
+                        *idx += 3;
                     }
                 }
                 6 => {
                     if prog[f_idx] == 0 {
-                        idx = prog[s_idx] as usize;
+                        *idx = prog[s_idx] as usize;
                     } else {
-                        idx += 3;
+                        *idx += 3;
                     }
                 }
                 7 => {
@@ -176,7 +229,7 @@ fn intcode(mut prog: Vec<isize>, mut input: Vec<isize>) -> Output {
                     } else {
                         prog[t_idx] = 0;
                     }
-                    idx += 4;
+                    *idx += 4;
                 }
                 8 => {
                     if prog[f_idx] == prog[s_idx] {
@@ -184,11 +237,11 @@ fn intcode(mut prog: Vec<isize>, mut input: Vec<isize>) -> Output {
                     } else {
                         prog[t_idx] = 0;
                     }
-                    idx += 4;
+                    *idx += 4;
                 }
                 _ => panic!("Should never happen"),
             }
         }
     }
-    Output::Continue(output);
+    (Output::Continue, output)
 }
