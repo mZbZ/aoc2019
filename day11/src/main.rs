@@ -1,33 +1,72 @@
 extern crate elapsed;
 use elapsed::measure_time;
+use std::collections::HashMap;
+
+const WHITE: isize = 1;
+const BLACK: isize = 0;
 
 fn main() {
-    println!("AOC 2019 Day9");
+    println!("AOC 2019 Day 11");
 
-    let _t_str0 = parse_intcode("1102,34915192,34915192,7,4,7,99,0");
-    assert_eq!(
-        part_both(_t_str0, vec![1]).pop().unwrap().to_string().len(),
-        16
-    );
-    let _t_str1 = parse_intcode("104,1125899906842624,99");
-    assert_eq!(
-        part_both(_t_str1, vec![1]).pop().unwrap(),
-        1_125_899_906_842_624
-    );
-    let _t_str2 = parse_intcode("109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99");
-    // println!("Test Quine Output {:?}", part_both(_t_str2, vec![]));
-    let (parse_time, input) = measure_time(|| parse_intcode(include_str!("../input")));
+    let (_, input) = measure_time(|| parse_intcode(include_str!("../input")));
     // println!("Parse time = {}", parse_time);
 
-    let (solve_time, output) = measure_time(|| part_both(input.clone(), vec![1]));
-    // println!("Part 1 answer = {:?}, Solve time = {}", output, solve_time);
+    let (solve_time, output) = measure_time(|| part_both(input.clone(), BLACK));
+    println!("Part 1 answer = {:?}, Solve time = {}", output, solve_time);
 
-    let (solve_time, output) = measure_time(|| part_both(input.clone(), vec![2]));
-    // println!("Part 2 answer = {:?}, Solve time = {}", output, solve_time);
+    let (solve_time, output) = measure_time(|| part_both(input.clone(), WHITE));
+    println!("Part 2 answer = {:?}, Solve time = {}", output, solve_time);
 }
 
-fn part_both(mut prog: Vec<isize>, mut input: Vec<isize>) -> Vec<isize> {
-    intcode(&mut prog, &mut input, &mut 0).1
+fn part_both(mut prog: Vec<isize>, start_col: isize) -> usize {
+    let mut hull: HashMap<(isize, isize), isize> = HashMap::new();
+    let mut direction = (0, 1);
+    let mut idx = 0;
+    let mut position = (0, 0);
+    let mut rel_base = 0;
+    hull.insert(position, start_col);
+    loop {
+        let hull_colour = match hull.get(&position) {
+            Some(col) => *col,
+            None => BLACK,
+        };
+        let (status, result) = intcode(&mut prog, &mut vec![hull_colour], &mut idx, &mut rel_base);
+
+        if result.len() != 2 {
+            panic!("This shoudln't happen");
+        }
+        hull.insert(position, result[0]);
+        match result[1] {
+            0 => direction = (-direction.1, direction.0),
+            1 => direction = (direction.1, -direction.0),
+            _ => panic!("Rotate where now?"),
+        }
+        position = (position.0 + direction.0, position.1 + direction.1);
+
+        if status == Output::Halt {
+            break;
+        }
+    }
+    print_hull(&hull);
+    hull.len()
+}
+
+fn print_hull(hull: &HashMap<(isize, isize), isize>) {
+    let min_x = hull.keys().min_by(|(x, _), (x1, _)| x.cmp(x1)).unwrap().0;
+    let max_x = hull.keys().max_by(|(x, _), (x1, _)| x.cmp(x1)).unwrap().0;
+    let min_y = hull.keys().min_by(|(_, y), (_, y1)| y.cmp(y1)).unwrap().1;
+    let max_y = hull.keys().max_by(|(_, y), (_, y1)| y.cmp(y1)).unwrap().1;
+    for y in (min_y..=max_y).rev() {
+        for x in min_x..=max_x {
+            match hull.get(&(x, y)) {
+                Some(&WHITE) => print!("#"),
+                Some(&BLACK) => print!(" "),
+                None => print!(" "),
+                _ => panic!("Should never happen!"),
+            }
+        }
+        println!();
+    }
 }
 
 fn parse_intcode(input: &str) -> Vec<isize> {
@@ -37,7 +76,7 @@ fn parse_intcode(input: &str) -> Vec<isize> {
         .collect::<Vec<isize>>()
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Output {
     Halt,
     Continue,
@@ -73,9 +112,13 @@ fn mode_to_idx(
     }
 }
 
-fn intcode(prog: &mut Vec<isize>, input: &mut Vec<isize>, idx: &mut usize) -> (Output, Vec<isize>) {
+fn intcode(
+    prog: &mut Vec<isize>,
+    input: &mut Vec<isize>,
+    idx: &mut usize,
+    rel_base: &mut isize,
+) -> (Output, Vec<isize>) {
     let mut output = (Output::Continue, vec![]);
-    let mut rel_base = 0isize;
     while *idx < prog.len() {
         if prog[*idx] % 100 == 99 {
             output.0 = Output::Halt;
@@ -85,9 +128,10 @@ fn intcode(prog: &mut Vec<isize>, input: &mut Vec<isize>, idx: &mut usize) -> (O
             check_size(prog, *idx + 1);
             check_size(prog, *idx + 2);
             check_size(prog, *idx + 3);
-            let f_idx = mode_to_idx(prog, f_mode, *idx, rel_base, 1);
-            let s_idx = mode_to_idx(prog, s_mode, *idx, rel_base, 2);
-            let t_idx = mode_to_idx(prog, t_mode, *idx, rel_base, 3);
+            let f_idx = mode_to_idx(prog, f_mode, *idx, *rel_base, 1);
+            let s_idx = mode_to_idx(prog, s_mode, *idx, *rel_base, 2);
+            let t_idx = mode_to_idx(prog, t_mode, *idx, *rel_base, 3);
+
             match op {
                 1 => {
                     check_size(prog, f_idx);
@@ -106,8 +150,13 @@ fn intcode(prog: &mut Vec<isize>, input: &mut Vec<isize>, idx: &mut usize) -> (O
                 }
                 3 => {
                     check_size(prog, f_idx);
-                    prog[f_idx] = input.pop().expect("Not enough input for program!");
-                    *idx += 2
+
+                    if let Some(input_val) = input.pop() {
+                        prog[f_idx] = input_val;
+                        *idx += 2;
+                    } else {
+                        return output;
+                    }
                 }
                 4 => {
                     check_size(prog, f_idx);
@@ -159,7 +208,7 @@ fn intcode(prog: &mut Vec<isize>, input: &mut Vec<isize>, idx: &mut usize) -> (O
                 }
                 9 => {
                     check_size(prog, f_idx);
-                    rel_base += prog[f_idx];
+                    *rel_base += prog[f_idx];
                     *idx += 2;
                 }
                 _ => panic!("Should never happen"),
