@@ -59,7 +59,7 @@ fn main() {
 
     let (solve_time, output) = measure_time(|| part2(test_input));
     println!("Test 2 answer = {:?}, Solve time = {}", output, solve_time);
-    // println!("Part 2: {:?}", part2(input));
+    println!("Part 2: {:?}", part2(input));
 }
 
 fn part1(mut input: Vec<Planet>, steps: usize) -> isize {
@@ -102,7 +102,7 @@ fn calculate_hash<T: Hash>(t: &T) -> u64 {
     s.finish()
 }
 
-#[derive(Debug, PartialEq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct Planet {
     pos: Pos,
     vel: Vel,
@@ -137,14 +137,14 @@ impl Planet {
     }
 }
 
-#[derive(Debug, PartialEq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct Pos {
     x: isize,
     y: isize,
     z: isize,
 }
 
-#[derive(Debug, Default, PartialEq, Hash, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Hash, Clone)]
 struct Vel {
     x: isize,
     y: isize,
